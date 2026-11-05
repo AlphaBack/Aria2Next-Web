@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AriaNext Web · aria2-next 控制台</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --line:#e5e9f2; --text:#2b3446; --muted:#8a94a6;
+  --primary:#2f6fed; --primary-d:#1f57c9; --ok:#22a06b; --warn:#e8a200; --bad:#e5484d;
+  --side:#1c2434; --side-text:#aeb9cc; --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+a{color:var(--primary);text-decoration:none}
+#app{display:flex;flex-direction:column;height:100vh}
+/* header */
+header{display:flex;align-items:center;gap:16px;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.logo{font-size:17px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.logo span{color:var(--primary)}
+.conn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;background:#c33;display:inline-block}
+.dot.on{background:var(--ok)}
+.speed{display:flex;gap:14px;align-items:center;font-variant-numeric:tabular-nums}
+.speed b{font-weight:600}
+.speed .dl{color:var(--primary)} .speed .ul{color:var(--ok)}
+#spark{width:170px;height:34px;background:#f7f9fd;border:1px solid var(--line);border-radius:6px}
+.hbtns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+/* layout */
+.layout{display:flex;flex:1;min-height:0}
+nav{width:186px;background:var(--side);color:var(--side-text);padding:12px 0;overflow-y:auto;flex-shrink:0}
+nav .nav-item{display:flex;align-items:center;gap:9px;padding:10px 18px;cursor:pointer;font-size:13.5px;border-left:3px solid transparent}
+nav .nav-item:hover{background:#242e42;color:#fff}
+nav .nav-item.active{background:#242e42;color:#fff;border-left-color:var(--primary)}
+nav .nav-head{padding:12px 18px 6px;font-size:11px;letter-spacing:1px;color:#5c6784;text-transform:uppercase}
+main{flex:1;overflow-y:auto;padding:18px}
+.view{display:none;max-width:1180px;margin:0 auto}
+.view.active{display:block}
+h2{font-size:18px;margin:2px 0 14px}
+h3{font-size:15px;margin:18px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+/* buttons & inputs */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--primary);color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.danger{color:var(--bad)} .btn.danger:hover{border-color:var(--bad)}
+.btn.small{padding:4px 9px;font-size:12px;border-radius:6px}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--text);width:100%}
+textarea{font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 4px}
+.field{margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.hint{font-size:12px;color:var(--muted)}
+code{background:#eef1f7;padding:1px 5px;border-radius:4px;font-size:12px}
+/* tasks */
+.task{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.task .t-top{display:flex;align-items:center;gap:10px}
+.task .t-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.task .t-name:hover{color:var(--primary)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;color:#fff;flex-shrink:0}
+.badge.media{background:#7c4dcc} .badge.ed2k{background:#0f9b8e} .badge.bittorrent{background:#d97706}
+.badge.http{background:#2f6fed} .badge.magnet{background:#b45309} .badge.metalink{background:#64748b}
+.badge.st-active{background:var(--primary)} .badge.st-waiting{background:var(--warn)} .badge.st-paused{background:#94a3b8}
+.badge.st-complete{background:var(--ok)} .badge.st-error{background:var(--bad)} .badge.st-removed{background:#64748b}
+.bar{height:7px;background:#edf0f6;border-radius:6px;overflow:hidden;margin:9px 0 6px}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:6px;transition:width .4s}
+.bar i.err{background:var(--bad)} .bar i.ok{background:var(--ok)}
+.t-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.t-act{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+/* kv table */
+table.kv{width:100%;border-collapse:collapse;font-size:12.5px}
+table.kv td,table.kv th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;word-break:break-all}
+table.kv td:first-child,table.kv th:first-child{width:210px;color:var(--muted);font-weight:500}
+table.list th{background:#f7f9fd;color:var(--muted);font-weight:600}
+/* modal */
+#modal-root{position:fixed;inset:0;display:none;z-index:60}
+#modal-root.open{display:block}
+.mask{position:absolute;inset:0;background:rgba(18,24,38,.5)}
+.modal{position:relative;max-width:860px;width:calc(100% - 32px);max-height:86vh;margin:5vh auto;background:#fff;border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.28)}
+.modal .m-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+.modal .m-head h3{margin:0;font-size:16px;flex:1}
+.modal .m-body{padding:18px;overflow-y:auto}
+.modal .m-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.x{cursor:pointer;font-size:20px;color:var(--muted);padding:0 4px}
+/* toast */
+#toast-root{position:fixed;top:16px;right:16px;z-index:90;display:flex;flex-direction:column;gap:8px}
+.toast{background:#22293a;color:#fff;padding:10px 14px;border-radius:9px;font-size:13px;max-width:360px;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fade .25s}
+.toast.ok{background:#1c7c54} .toast.err{background:#b3323a} .toast.warn{background:#a26b00}
+@keyframes fade{from{opacity:0;transform:translateY(-6px)}to{opacity:1}}
+.pill{display:inline-block;background:#eef2fb;color:#3b5bdb;border-radius:20px;padding:2px 10px;font-size:12px;margin:2px 4px 2px 0}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.stat-card .v{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat-card .l{font-size:12px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:44px 0}
+.sort-bar{display:flex;gap:6px;flex-wrap:wrap}
+.sort-bar .btn{background:#f7f9fd;border-color:var(--line)}
+.sort-bar .btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+@media (max-width:820px){
+  nav{width:56px} nav .nav-item span,nav .nav-head{display:none} nav .nav-item{justify-content:center;padding:12px 0}
+  .grid2,.grid3{grid-template-columns:1fr} header{gap:10px} #spark{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">AriaNext <span>Web</span></div>
+    <div class="conn"><i class="dot" id="conn-dot"></i><span id="conn-text">未连接</span></div>
+    <div class="speed">
+      <span class="dl">↓ <b id="sp-dl">0 B/s</b></span>
+      <span class="ul">↑ <b id="sp-ul">0 B/s</b></span>
+    </div>
+    <canvas id="spark" width="340" height="68"></canvas>
+    <div class="hbtns">
+      <button class="btn small" data-act="pause-all">⏸ 全部暂停</button>
+      <button class="btn small" data-act="unpause-all">▶ 全部开始</button>
+      <button class="btn small" data-act="purge">🧹 清除记录</button>
+      <button class="btn small danger" data-act="shutdown">⏻ 关机</button>
+    </div>
+  </header>
+  <div class="layout">
+    <nav id="nav">
+      <div class="nav-head">任务</div>
+      <div class="nav-item active" data-view="downloading">📥 <span>正在下载</span></div>
+      <div class="nav-item" data-view="waiting">⏳ <span>等待 / 暂停</span></div>
+      <div class="nav-item" data-view="stopped">✅ <span>已停止</span></div>
+      <div class="nav-head">操作</div>
+      <div class="nav-item" data-view="add">➕ <span>新建任务</span></div>
+      <div class="nav-item" data-view="ed2k">🔍 <span>ED2K 搜索</span></div>
+      <div class="nav-item" data-view="tools">🧰 <span>工具箱</span></div>
+      <div class="nav-item" data-view="settings">⚙️ <span>设置</span></div>
+    </nav>
+    <main>
+      <!-- 下载中 -->
+      <section class="view active" id="view-downloading">
+        <h2>正在下载</h2>
+        <div class="stat-cards" id="stat-cards"></div>
+        <div class="row" style="margin-bottom:12px">
+          <div class="sort-bar">
+            <span class="hint">排序：</span>
+            <button class="btn small" data-sort="add">添加时间</button>
+            <button class="btn small" data-sort="progress">进度</button>
+            <button class="btn small" data-sort="remaining">剩余时间</button>
+            <button class="btn small" data-sort="name">文件名</button>
+          </div>
+        </div>
+        <div id="list-active"></div>
+      </section>
+      <!-- 等待 -->
+      <section class="view" id="view-waiting">
+        <h2>等待 / 暂停</h2>
+        <div class="row" style="margin-bottom:12px">
+          <div class="sort-bar">
+            <span class="hint">排序：</span>
+            <button class="btn small" data-sort="add">添加时间</button>
+            <button class="btn small" data-sort="progress">进度</button>
+            <button class="btn small" data-sort="remaining">剩余时间</button>
+            <button class="btn small" data-sort="name">文件名</button>
+          </div>
+        </div>
+        <div id="list-waiting"></div>
+      </section>
+      <!-- 停止 -->
+      <section class="view" id="view-stopped">
+        <h2>已停止</h2>
+        <div class="row" style="margin-bottom:12px">
+          <button class="btn small" data-act="purge">🧹 清除全部已完成记录</button>
+          <div class="sort-bar">
+            <span class="hint">排序：</span>
+            <button class="btn small" data-sort="add">添加时间</button>
+            <button class="btn small" data-sort="progress">进度</button>
+            <button class="btn small" data-sort="remaining">剩余时间</button>
+            <button class="btn small" data-sort="name">文件名</button>
+          </div>
+        </div>
+        <div id="list-stopped"></div>
+      </section>
+      <!-- 新建 -->
+      <section class="view" id="view-add">
+        <h2>新建任务</h2>
+        <div class="card">
+          <div class="row" style="margin-bottom:12px">
+            <button class="btn primary small" data-addtab="uri">链接下载</button>
+            <button class="btn small" data-addtab="torrent">Torrent 文件</button>
+            <button class="btn small" data-addtab="metalink">Metalink 文件</button>
+          </div>
+          <div id="addtab-uri">
+            <div class="field">
+              <label>下载链接（每行一个；支持 http(s) / ftp / magnet / ed2k:// / thunder://）</label>
+              <textarea id="add-uris" rows="5" placeholder="https://example.com/file.zip&#10;magnet:?xt=urn:btih:...&#10;ed2k://|file|xxx|.../&#10;thunder://..."></textarea>
+            </div>
+          </div>
+          <div id="addtab-torrent" style="display:none">
+            <div class="field"><label>Torrent 文件（.torrent）</label><input type="file" id="add-torrent" accept=".torrent"></div>
+            <div class="field"><label>Trackers（逗号分隔，可选，对应 bt-tracker）</label><input type="text" id="add-bt-tracker" placeholder="udp://tracker1...,udp://tracker2..."></div>
+          </div>
+          <div id="addtab-metalink" style="display:none">
+            <div class="field"><label>Metalink 文件（.metalink / .meta4）</label><input type="file" id="add-metalink" accept=".metalink,.meta4,.xml"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>保存目录 dir</label><input type="text" id="add-dir" placeholder="/downloads"></div>
+            <div class="field"><label>文件名 out</label><input type="text" id="add-out" placeholder="自动"></div>
+            <div class="field"><label>文件分配 file-allocation</label>
+              <select id="add-alloc"><option value="">默认</option><option>none</option><option>prealloc</option><option>falloc</option><option>trunc</option></select>
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>下载限速 max-download-limit（如 2M）</label><input type="text" id="add-dllimit"></div>
+            <div class="field"><label>BT 选中文件 select-file（如 1-3,7）</label><input type="text" id="add-selectfile"></div>
+            <div class="field"><label>Referer</label><input type="text" id="add-referer"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>User-Agent</label><input type="text" id="add-ua"></div>
+            <div class="field"><label>磁力暂停于元数据（选文件用）</label>
+              <select id="add-pausemeta"><option value="false">否</option><option value="true">是</option></select>
+            </div>
+            <div class="field"><label>添加后暂停</label>
+              <select id="add-pause"><option value="false">否</option><option value="true">是</option></select>
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>代理 all-proxy（如 http://127.0.0.1:7890，留空则沿用全局）</label><input type="text" id="add-allproxy"></div>
+            <div class="field"><label>不走代理 no-proxy（逗号分隔，留空则沿用全局）</label><input type="text" id="add-no-proxy"></div>
+            <div class="field"><label>全局代理用户 all-proxy-user</label><input type="text" id="add-proxy-user"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>全局代理密码 all-proxy-passwd</label><input type="password" id="add-proxy-passwd"></div>
+          </div>
+          <div class="field">
+            <label>更多选项（JSON，合并进任务 options，如 {"header":["Cookie: a=b"], "media-video":"best"}）</label>
+            <textarea id="add-extra" rows="3" placeholder="{}"></textarea>
+          </div>
+          <div class="row">
+            <button class="btn primary" data-act="add-task">🚀 添加任务</button>
+            <button class="btn" data-act="add-task-paused">⏸ 添加并暂停</button>
+            <span class="hint">thunder:// 会在引擎内解码；media 任务可用 media-* 选项（见设置页示例）。</span>
+          </div>
+        </div>
+      </section>
+      <!-- ED2K -->
+      <section class="view" id="view-ed2k">
+        <h2>ED2K 搜索 & 状态</h2>
+        <div class="card">
+          <h3 style="margin-top:0">搜索</h3>
+          <div class="grid3">
+            <div class="field"><label>关键词</label><input type="text" id="ed-kw" placeholder="文件名关键字"></div>
+            <div class="field"><label>文件类型 fileType</label>
+              <select id="ed-type"><option value="">任意</option><option>audio</option><option>video</option><option>archive</option><option>image</option><option>document</option><option>program</option></select>
+            </div>
+            <div class="field"><label>扩展名 extension</label><input type="text" id="ed-ext" placeholder="mkv"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>最小体积（字节）</label><input type="text" id="ed-minsize" placeholder="0"></div>
+            <div class="field"><label>最大体积（字节）</label><input type="text" id="ed-maxsize" placeholder="不限"></div>
+            <div class="field"><label>超时（5-600 秒）</label><input type="number" id="ed-timeout" value="60" min="5" max="600"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>最少源数 minSourceCount</label><input type="number" id="ed-minsrc" placeholder="0"></div>
+            <div class="field"><label>最少完整源数</label><input type="number" id="ed-minfull" placeholder="0"></div>
+            <div class="field" style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn primary" data-act="ed-search">🔍 开始搜索</button>
+              <button class="btn" data-act="ed-more">更多结果</button>
+              <button class="btn danger" data-act="ed-stop">停止</button>
+            </div>
+          </div>
+          <div class="hint" id="ed-status">尚未搜索。</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">搜索结果</h3>
+          <div id="ed-results" class="empty">暂无结果</div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">ED2K 客户端状态</h3><button class="btn small" data-act="ed-client-status">刷新</button></div>
+          <div id="ed-client" class="hint" style="margin-top:10px">未加载。</div>
+        </div>
+      </section>
+      <!-- 工具箱 -->
+      <section class="view" id="view-tools">
+        <h2>工具箱（aria2-next 扩展）</h2>
+        <div class="card">
+          <h3 style="margin-top:0">aria2.probe — 链接探测</h3>
+          <div class="row">
+            <input type="text" id="probe-url" class="grow" placeholder="https://example.com/file.zip">
+            <button class="btn primary" data-act="probe">探测</button>
+          </div>
+          <div id="probe-result" style="margin-top:12px"></div>
+          <div class="hint">按“下载任务”的方式请求第一个字节，返回最终 URL、Content-Type、文件名、总大小与是否可续传。</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">aria2.resolveFilename — 文件名解析</h3>
+          <div class="grid2">
+            <div class="field"><label>URL</label><input type="text" id="rf-url"></div>
+            <div class="field"><label>Content-Disposition 原文</label><input type="text" id="rf-cd" placeholder="attachment; filename=&quot;a.zip&quot;"></div>
+          </div>
+          <button class="btn primary" data-act="resolve-filename">解析</button>
+          <div id="rf-result" class="hint" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">aria2.inspectTorrent — 查看种子（不添加任务）</h3>
+          <div class="field"><label>.torrent 文件</label><input type="file" id="ins-file" accept=".torrent"></div>
+          <button class="btn primary" data-act="inspect-torrent">查看</button>
+          <div id="ins-result" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">aria2.moveDownload — 移动未完成任务目录</h3>
+          <div class="grid2">
+            <div class="field"><label>GID</label><input type="text" id="mv-gid"></div>
+            <div class="field"><label>目标目录 dir</label><input type="text" id="mv-dir"></div>
+          </div>
+          <button class="btn primary" data-act="do-move-download">移动</button>
+          <div id="mv-result" class="hint" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">aria2.getBtSessionStatus — BT 会话状态</h3><button class="btn small" data-act="bt-session">刷新</button></div>
+          <div id="bt-session" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">aria2.setBtPeerBlocklist — Peer 封锁列表</h3>
+          <div class="field"><label>每行一条（IP / CIDR / 范围）；留空提交以清空</label><textarea id="bl-rules" rows="5" placeholder="1.2.3.4&#10;10.0.0.0/8&#10;192.168.1.1-192.168.1.50"></textarea></div>
+          <button class="btn primary" data-act="set-blocklist">提交（整体替换）</button>
+          <div id="bl-result" class="hint" style="margin-top:10px"></div>
+        </div>
+      </section>
+      <!-- 设置 -->
+      <section class="view" id="view-settings">
+        <h2>设置</h2>
+        <div class="card">
+          <h3 style="margin-top:0">RPC 连接</h3>
+          <div class="grid3">
+            <div class="field"><label>主机</label><input type="text" id="cfg-host"></div>
+            <div class="field"><label>端口</label><input type="number" id="cfg-port"></div>
+            <div class="field"><label>路径</label><input type="text" id="cfg-path"></div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>RPC 密钥 rpc-secret</label><input type="password" id="cfg-secret"></div>
+            <div class="field"><label>传输方式</label>
+              <select id="cfg-transport"><option value="auto">自动（优先 WebSocket）</option><option value="ws">WebSocket</option><option value="http">HTTP POST</option></select>
+            </div>
+            <div class="field"><label>加密 (wss/https)</label>
+              <select id="cfg-tls"><option value="false">否</option><option value="true">是</option></select>
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>刷新间隔（毫秒）</label><input type="number" id="cfg-interval" min="500"></div>
+            <div class="field" style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn primary" data-act="save-conn">保存并连接</button>
+              <button class="btn" data-act="reconnect">重新连接</button>
+            </div>
+          </div>
+          <div class="hint">浏览器直连需要 aria2-next 以 <code>--rpc-listen-all --rpc-allow-origin-all</code> 启动，或与本页面同源部署。跨域时请设置 <code>--rpc-secret</code>。</div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">全局代理（aria2.changeGlobalOption）</h3>
+            <button class="btn small primary" data-act="save-gproxy">保存修改</button>
+          </div>
+          <div class="hint" style="margin:8px 0">仅提交被修改的键。留空表示不修改（沿用引擎现有值）。格式：http://[USER:PASS@]HOST:PORT 或 socks5://HOST:PORT。</div>
+          <div id="gproxy-box"></div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">引擎信息</h3><button class="btn small" data-act="refresh-version">刷新</button></div>
+          <div id="version-box" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">全局选项（aria2.getGlobalOption / changeGlobalOption）</h3>
+            <button class="btn small" data-act="reload-gopt">重新加载</button>
+            <button class="btn small primary" data-act="save-gopt">保存修改</button>
+          </div>
+          <div class="hint" style="margin:8px 0">仅提交被修改的键。限速直接填字节数（如 2M 对应 2097152），留空表示不修改。</div>
+          <div id="gopt-box"></div>
+        </div>
+        <div class="card">
+          <div class="row"><h3 style="margin:0;flex:1">会话</h3>
+            <button class="btn small" data-act="save-session">aria2.saveSession</button>
+            <button class="btn small" data-act="session-info">aria2.getSessionInfo</button>
+          </div>
+          <div id="session-box" class="hint" style="margin-top:10px"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">关于</h3>
+          <div class="hint">
+            AriaNext Web — 面向 aria2-next 的单文件 Web 控制台，界面与交互参照开源项目
+            <a href="https://github.com/mayswind/AriaNg" target="_blank" rel="noreferrer">AriaNg</a>，协议层兼容标准 aria2 JSON-RPC，
+            并实现了 aria2-next v3.0.9 的 RPC 扩展（media / ED2K / BitTorrent 增强、probe、resolveFilename、moveDownload 等）。
+            零依赖、无构建，直接用浏览器打开即可。
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<div id="modal-root"><div class="mask" data-act="close-modal"></div><div class="modal">
+  <div class="m-head"><h3 id="m-title"></h3><span class="x" data-act="close-modal">×</span></div>
+  <div class="m-body" id="m-body"></div>
+  <div class="m-foot" id="m-foot"></div>
+</div></div>
+<div id="toast-root"></div>
+
+<script>
+'use strict';
+/* ============================== 工具 ============================== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtBytes(n){ n=+n||0; if(n<0)n=0; const u=['B','KiB','MiB','GiB','TiB','PiB']; let i=0; while(n>=1024&&i<u.length-1){n/=1024;i++;} return (i?n.toFixed(2):n.toFixed(0))+' '+u[i]; }
+function fmtSpeed(n){ return fmtBytes(n)+'/s'; }
+function fmtETA(sec){ sec=+sec; if(!isFinite(sec)||sec<=0||sec>86400*365) return '—'; const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.round(sec%60); return (h?h+'时':'')+(h||m?m+'分':'')+s+'秒'; }
+function fmtDurMs(ms){ ms=+ms||0; const t=Math.floor(ms/1000), h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=t%60; return (h?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+function toast(msg, kind){ const d=document.createElement('div'); d.className='toast '+(kind||''); d.textContent=msg; $('#toast-root').appendChild(d); setTimeout(()=>{ d.style.opacity='0'; d.style.transition='opacity .3s'; setTimeout(()=>d.remove(),320); }, 3600); }
+function num(v){ const n=+v; return isFinite(n)?n:0; }
+
+/* ============================== 配置 ============================== */
+const defaults = {
+  host: location.hostname || '127.0.0.1',
+  port: 6800,
+  path: '/jsonrpc',
+  secret: '',
+  transport: 'auto',
+  tls: location.protocol === 'https:' ? 'true' : 'false',
+  interval: 1000
+};
+let cfg = Object.assign({}, defaults);
+try { cfg = Object.assign(cfg, JSON.parse(localStorage.getItem('arianext.cfg') || '{}')); } catch(e){}
+function saveCfg(){ localStorage.setItem('arianext.cfg', JSON.stringify(cfg)); }
+const useTls = () => cfg.tls === true || cfg.tls === 'true';
+function httpUrl(){ return (useTls()?'https':'http') + '://' + cfg.host + ':' + cfg.port + cfg.path; }
+function wsUrl(){ return (useTls()?'wss':'ws') + '://' + cfg.host + ':' + cfg.port + cfg.path; }
+
+/* ============================== JSON-RPC ============================== */
+let ws = null, wsAlive = false, reqSeq = 0, connTimer = null;
+const pending = new Map();
+
+function withToken(params){
+  const p = Array.isArray(params) ? params.slice() : [];
+  if (cfg.secret) p.unshift('token:' + cfg.secret);
+  return p;
+}
+function wsSend(payload){
+  return new Promise((resolve, reject) => {
+    const id = 'r' + (++reqSeq);
+    payload.id = id; payload.jsonrpc = '2.0';
+    pending.set(id, {resolve, reject});
+    ws.send(JSON.stringify(payload));
+    setTimeout(() => { if (pending.has(id)) { pending.delete(id); reject(new Error('请求超时')); } }, 30000);
+  });
+}
+async function httpCall(payload){
+  payload.jsonrpc = '2.0'; payload.id = 'h' + (++reqSeq);
+  const res = await fetch(httpUrl(), {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  });
+  const j = await res.json();
+  if (j.error) throw new Error((j.error.message || 'RPC 错误') + ' (' + j.error.code + ')');
+  return j.result;
+}
+function call(method, params){
+  // system.* 方法不需要 token；system.multicall 的 token 加在每个子调用的 params 里
+  const needToken = !/^system\./.test(method);
+  const payload = { method, params: needToken ? withToken(params || []) : (params || []) };
+  if (wsAlive && ws && ws.readyState === 1) return wsSend(payload);
+  return httpCall(payload);
+}
+function multicall(calls){
+  const arr = calls.map(c => ({ methodName: c[0], params: withToken(c[1] || []) }));
+  return call('system.multicall', [arr]).then(results => {
+    return (results || []).map(r => {
+      // aria2 system.multicall returns [[result], [result], ...] or [[{faultCode,...}]]
+      if (Array.isArray(r)) {
+        if (r.length === 1) {
+          const v = r[0];
+          if (v && typeof v === 'object' && !Array.isArray(v) && (v.faultCode !== undefined || v.code !== undefined) && v.faultString !== undefined) {
+            return { __error: v.faultString || v.message || ('code ' + (v.faultCode || v.code)) };
+          }
+          if (v && typeof v === 'object' && !Array.isArray(v) && v.code !== undefined && v.message !== undefined && v.result === undefined) {
+            return { __error: v.message || ('code ' + v.code) };
+          }
+          return v;
+        }
+        // if it's an array of errors or unexpected
+        if (r.length === 0) return [];
+        const v = r[0];
+        if (v && typeof v === 'object' && !Array.isArray(v) && (v.faultCode !== undefined || v.code !== undefined)) {
+          return { __error: v.faultString || v.message || ('code ' + (v.faultCode || v.code)) };
+        }
+        return r;
+      }
+      if (r && typeof r === 'object' && (r.faultCode !== undefined || r.code !== undefined) && (r.faultString !== undefined || r.message !== undefined)) {
+        return { __error: r.faultString || r.message || ('code ' + (r.faultCode || r.code)) };
+      }
+      return r;
+    });
+  });
+}
+
+function setConn(ok, msg){
+  wsAlive = ok && (wsAlive || true);
+  $('#conn-dot').className = 'dot' + (ok ? ' on' : '');
+  $('#conn-text').textContent = msg || (ok ? '已连接' : '未连接');
+}
+function onNotification(method, params){
+  const map = {
+    'aria2.onDownloadStart': '⬇️ 任务开始',
+    'aria2.onDownloadPause': '⏸ 任务暂停',
+    'aria2.onDownloadStop': '⏹ 任务停止',
+    'aria2.onDownloadComplete': '✅ 任务完成',
+    'aria2.onDownloadError': '❌ 任务出错'
+  };
+  if (map[method]) {
+    const gid = params && params[0] && params[0].gid;
+    toast(map[method] + (gid ? ' · ' + gid : ''), method === 'aria2.onDownloadError' ? 'err' : (method === 'aria2.onDownloadComplete' ? 'ok' : ''));
+  }
+}
+function connect(){
+  if (connTimer) { clearTimeout(connTimer); connTimer = null; }
+  if (ws) { try { ws.onclose = null; ws.close(); } catch(e){} ws = null; }
+  wsAlive = false;
+  const prefer = cfg.transport === 'auto' ? 'ws' : cfg.transport;
+  if (prefer === 'http') {
+    setConn(false, 'HTTP 模式');
+    httpCall({ method: 'aria2.getVersion', params: withToken([]) })
+      .then(v => { state.version = v; setConn(true, '已连接 (HTTP)'); onConnected(); })
+      .catch(e => { setConn(false, '连接失败: ' + e.message); connTimer = setTimeout(connect, 5000); });
+    return;
+  }
+  setConn(false, '连接中…');
+  try { ws = new WebSocket(wsUrl()); } catch(e) {
+    if (cfg.transport === 'auto') { cfg.transport = 'http'; connect(); return; }
+    setConn(false, '连接失败'); return;
+  }
+  const fail = () => {
+    if (cfg.transport === 'auto' && !wsAlive) { cfg.transport = 'http'; connect(); return; }
+    setConn(false, '连接断开，重试中…');
+    connTimer = setTimeout(connect, 3000);
+  };
+  ws.onopen = async () => {
+    wsAlive = true; setConn(true, '已连接 (WebSocket)');
+    try { state.version = await call('aria2.getVersion', []); } catch(e){}
+    onConnected();
+  };
+  ws.onmessage = ev => {
+    let msg; try { msg = JSON.parse(ev.data); } catch(e){ return; }
+    if (msg.id && pending.has(msg.id)) {
+      const p = pending.get(msg.id); pending.delete(msg.id);
+      if (msg.error) p.reject(new Error((msg.error.message || 'RPC 错误') + ' (' + msg.error.code + ')'));
+      else p.resolve(msg.result);
+    } else if (msg.method) {
+      onNotification(msg.method, msg.params);
+    }
+  };
+  ws.onerror = () => {};
+  ws.onclose = fail;
+}
+function onConnected(){ refreshGlobalOptions(); refreshVersion(); startPolling(); poll(); }
+
+/* ============================== 状态 ============================== */
+const state = {
+  stat: { downloadSpeed: '0', uploadSpeed: '0', numActive: '0', numWaiting: '0', numStopped: '0' },
+  active: [], waiting: [], stopped: [], version: null,
+  history: [], edSearchGid: null, edPoll: null, gopt: {},
+  sort: { '#list-active': 'add', '#list-waiting': 'add', '#list-stopped': 'add' }
+};
+
+function startPolling(){
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(poll, Math.max(500, +cfg.interval || 1000));
+}
+async function poll(){
+  if (!(wsAlive || cfg.transport === 'http')) return;
+  try {
+    const r = await multicall([
+      ['aria2.getGlobalStat', []],
+      ['aria2.tellActive', []],
+      ['aria2.tellWaiting', [0, 200]],
+      ['aria2.tellStopped', [0, 200]]
+    ]);
+    if (r[0] && !r[0].__error) state.stat = r[0];
+    state.active = (!r[1] || r[1].__error) ? [] : r[1];
+    state.waiting = (!r[2] || r[2].__error) ? [] : r[2];
+    state.stopped = (!r[3] || r[3].__error) ? [] : r[3];
+    renderAll();
+  } catch(e){ /* 静默，连接状态由 ws 事件维护 */ }
+}
+
+/* ============================== 渲染 ============================== */
+function taskName(t){
+  if (t.bittorrent && t.bittorrent.info && t.bittorrent.info.name) return t.bittorrent.info.name;
+  if (t.files && t.files[0] && t.files[0].path) { const p = t.files[0].path.split(/[\\/]/).pop(); if (p) return p; }
+  if (t.files && t.files[0] && t.files[0].uris && t.files[0].uris[0]) return t.files[0].uris[0].uri;
+  return t.gid;
+}
+function taskKind(t){
+  if (t.media) return 'media';
+  if (t.ed2k) return 'ed2k';
+  if (t.bittorrent) return 'bittorrent';
+  const u = (t.files && t.files[0] && t.files[0].uris && t.files[0].uris[0] && t.files[0].uris[0].uri) || '';
+  if (/^magnet:/i.test(u)) return 'magnet';
+  if (/^thunder:/i.test(u)) return 'thunder';
+  if (/^ed2k:/i.test(u)) return 'ed2k';
+  if (/\.meta4|metalink/i.test(u)) return 'metalink';
+  return 'http';
+}
+const kindLabel = { media:'MEDIA/HLS', ed2k:'ED2K', bittorrent:'BitTorrent', magnet:'Magnet', thunder:'Thunder', metalink:'Metalink', http:'HTTP/FTP' };
+function stateLabel(t){
+  if (t.status) {
+    if (t.status === 'complete') return '已完成';
+    if (t.status === 'error') return '错误';
+    if (t.status === 'removed') return '已删除';
+  }
+  if (t.state === 'active') return '下载中';
+  if (t.state === 'waiting') return '等待中';
+  if (t.state === 'paused') return '已暂停';
+  return t.state || t.status || '未知';
+}
+function stateBadge(t){
+  let s = t.state || t.status || '';
+  if (t.status === 'complete') s = 'complete';
+  if (t.status === 'error') s = 'error';
+  if (t.status === 'removed') s = 'removed';
+  return '<span class="badge st-' + esc(s) + '">' + esc(stateLabel(t)) + '</span>';
+}
+function progressOf(t){
+  const total = num(t.totalLength), done = num(t.completedLength);
+  if (total > 0) return Math.min(1, done / total);
+  if (t.media) {
+    const d = num(t.media.duration), c = num(t.media.completedDuration);
+    if (d > 0) return Math.min(1, c / d);
+    const p = num(t.media.progress);
+    return p > 1 ? Math.min(1, p / 100) : Math.min(1, p);
+  }
+  return 0;
+}
+function sizeText(t){
+  const total = num(t.totalLength), done = num(t.completedLength);
+  if (total > 0) return fmtBytes(done) + ' / ' + fmtBytes(total);
+  if (t.media) return fmtBytes(num(t.media.downloadedLength)) + '（时长 ' + fmtDurMs(num(t.media.duration)) + '）';
+  return fmtBytes(done);
+}
+function extraMeta(t){
+  const bits = [];
+  if (t.media) {
+    bits.push('协议 ' + esc(t.media.protocol || '?'));
+    if (t.media.live === true || t.media.live === 'true') bits.push('直播');
+    if (t.media.lengthKnown === false) bits.push('大小未知');
+    if (t.media.tracks) bits.push('轨道 ' + (Array.isArray(t.media.tracks) ? t.media.tracks.length : '✓'));
+    if (t.media.error) bits.push('错误: ' + esc(t.media.error));
+  }
+  if (t.ed2k) {
+    bits.push('源 ' + num(t.ed2k.peerCount) + '（排队 ' + num(t.ed2k.queuedPeerCount) + '）');
+    if (num(t.ed2k.corruptPartCount) > 0) bits.push('损坏块 ' + t.ed2k.corruptPartCount);
+    if (t.ed2k.aichRoot) bits.push('AICH ✓');
+  }
+  if (t.bittorrent) {
+    bits.push('Peer ' + num(t.bittorrent.numPeers) + ' / Seed ' + num(t.bittorrent.numSeeds));
+    if (t.bittorrent.availability !== undefined) bits.push('可用性 ' + esc(t.bittorrent.availability));
+    if (t.bittorrent.fileSelectionState && t.bittorrent.fileSelectionState !== 'none') bits.push('选文件: ' + esc(t.bittorrent.fileSelectionState));
+    if (t.bittorrent.privateTorrent === true || t.bittorrent.privateTorrent === 'true') bits.push('私有种子');
+    if (t.bittorrent.state) bits.push('BT: ' + esc(t.bittorrent.state));
+  }
+  return bits;
+}
+function taskRow(t){
+  const p = progressOf(t) * 100;
+  const kind = taskKind(t);
+  const dl = num(t.downloadSpeed), ul = num(t.uploadSpeed);
+  const total = num(t.totalLength), done = num(t.completedLength);
+  const eta = (dl > 0 && total > done) ? (total - done) / dl : -1;
+  const barCls = t.status === 'error' ? 'err' : (t.status === 'complete' ? 'ok' : '');
+  const extras = extraMeta(t);
+  return '<div class="task" data-gid="' + esc(t.gid) + '">' +
+    '<div class="t-top">' +
+      stateBadge(t) +
+      '<span class="badge ' + esc(kind) + '">' + esc(kindLabel[kind] || kind) + '</span>' +
+      '<div class="t-name" data-act="detail" data-gid="' + esc(t.gid) + '" title="' + esc(taskName(t)) + '">' + esc(taskName(t)) + '</div>' +
+      '<div class="t-act">' +
+        (t.state === 'active' || t.state === 'waiting' ? '<button class="btn small" data-act="pause" data-gid="' + esc(t.gid) + '">⏸</button>' : '') +
+        (t.state === 'paused' ? '<button class="btn small" data-act="unpause" data-gid="' + esc(t.gid) + '">▶</button>' : '') +
+        '<button class="btn small danger" data-act="remove" data-gid="' + esc(t.gid) + '">✕</button>' +
+        '<button class="btn small" data-act="detail" data-gid="' + esc(t.gid) + '">详情</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="bar"><i class="' + barCls + '" style="width:' + p.toFixed(2) + '%"></i></div>' +
+    '<div class="t-meta">' +
+      '<span>' + p.toFixed(2) + '%</span>' +
+      '<span>' + sizeText(t) + '</span>' +
+      (t.state === 'active' ? '<span>↓ ' + fmtSpeed(dl) + '</span><span>↑ ' + fmtSpeed(ul) + '</span><span>剩余 ' + fmtETA(eta) + '</span>' : '') +
+      (t.connections ? '<span>连接 ' + esc(t.connections) + '</span>' : '') +
+      (extras.map(e => '<span>' + e + '</span>').join('')) +
+    '</div>' +
+  '</div>';
+}
+function renderList(id, arr){
+  const box = $(id);
+  if (!arr || !arr.length) { box.innerHTML = '<div class="empty">没有任务</div>'; return; }
+  const sort = state.sort[id] || 'add';
+  const sorted = sortTasks(arr, sort);
+  box.innerHTML = sorted.map(taskRow).join('');
+  const bar = box.closest('.view') && box.closest('.view').querySelector('.sort-bar');
+  if (bar) bar.querySelectorAll('.btn').forEach(b => b.classList.toggle('active', b.dataset.sort === sort));
+}
+function sortTasks(arr, key){
+  const a = arr.slice();
+  const getAdd = t => num(t.addedDate || t.addTime) || num(t.completedLength) || 0;
+  const getProg = t => {
+    const total = num(t.totalLength), done = num(t.completedLength);
+    if (total > 0) return done / total;
+    if (t.media) {
+      const d = num(t.media.duration), c = num(t.media.completedDuration);
+      if (d > 0) return c / d;
+      const p = num(t.media.progress);
+      return p > 1 ? p / 100 : p;
+    }
+    return 0;
+  };
+  const getRem = t => {
+    const dl = num(t.downloadSpeed), total = num(t.totalLength), done = num(t.completedLength);
+    if (dl > 0 && total > done) return (total - done) / dl;
+    return Infinity;
+  };
+  const getName = t => (taskName(t) || '').toLowerCase();
+  a.sort((x, y) => {
+    switch (key) {
+      case 'progress': return getProg(y) - getProg(x);
+      case 'remaining': return getRem(x) - getRem(y);
+      case 'name': return getName(x).localeCompare(getName(y), 'zh-CN');
+      default: return getAdd(y) - getAdd(x);
+    }
+  });
+  return a;
+}
+function renderStats(){
+  const s = state.stat;
+  $('#sp-dl').textContent = fmtSpeed(s.downloadSpeed);
+  $('#sp-ul').textContent = fmtSpeed(s.uploadSpeed);
+  state.history.push([num(s.downloadSpeed), num(s.uploadSpeed)]);
+  if (state.history.length > 60) state.history.shift();
+  drawSpark();
+  $('#stat-cards').innerHTML =
+    '<div class="stat-card"><div class="v">' + esc(s.numActive || 0) + '</div><div class="l">活动任务</div></div>' +
+    '<div class="stat-card"><div class="v">' + esc(s.numWaiting || 0) + '</div><div class="l">等待 / 暂停</div></div>' +
+    '<div class="stat-card"><div class="v">' + esc(s.numStopped || 0) + '</div><div class="l">已停止</div></div>' +
+    '<div class="stat-card"><div class="v">' + fmtSpeed(s.downloadSpeed) + '</div><div class="l">总下载速度</div></div>' +
+    '<div class="stat-card"><div class="v">' + fmtSpeed(s.uploadSpeed) + '</div><div class="l">总上传速度</div></div>';
+}
+function drawSpark(){
+  const c = $('#spark'); if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  const h = state.history; if (h.length < 2) return;
+  const max = Math.max(1024, ...h.map(p => Math.max(p[0], p[1])));
+  const draw = (idx, color) => {
+    ctx.beginPath();
+    h.forEach((p, i) => {
+      const x = (i / (h.length - 1)) * W;
+      const y = H - (p[idx] / max) * (H - 6) - 3;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.stroke();
+  };
+  draw(0, '#2f6fed'); draw(1, '#22a06b');
+}
+function renderAll(){
+  renderStats();
+  renderList('#list-active', state.active);
+  renderList('#list-waiting', state.waiting);
+  renderList('#list-stopped', state.stopped);
+}
+
+/* ============================== 视图切换 ============================== */
+function showView(name){
+  $$('#nav .nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === name));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'settings') { fillConnForm(); refreshVersion(); refreshGlobalProxy(); }
+}
+document.addEventListener('click', e => {
+  const nav = e.target.closest('#nav .nav-item');
+  if (nav) { showView(nav.dataset.view); return; }
+  const tab = e.target.closest('[data-addtab]');
+  if (tab) {
+    ['uri', 'torrent', 'metalink'].forEach(k => $('#addtab-' + k).style.display = (k === tab.dataset.addtab ? '' : 'none'));
+    $$('[data-addtab]').forEach(b => { b.classList.toggle('primary', b.dataset.addtab === tab.dataset.addtab); b.classList.toggle('btn', true); });
+    return;
+  }
+  const sb = e.target.closest('[data-sort]');
+  if (sb) {
+    const bar = sb.closest('.sort-bar');
+    const view = bar && bar.closest('.view');
+    const listEl = view && view.querySelector('[id^="list-"]');
+    const listId = listEl ? '#' + listEl.id : null;
+    if (listId) { state.sort[listId] = sb.dataset.sort; renderList(listId, listId === '#list-active' ? state.active : (listId === '#list-waiting' ? state.waiting : state.stopped)); }
+    return;
+  }
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act, gid = b.dataset.gid;
+  handleAction(act, gid, b);
+});
+
+/* ============================== 模态 ============================== */
+function showModal(title, body, foot){
+  $('#m-title').textContent = title;
+  $('#m-body').innerHTML = body;
+  $('#m-foot').innerHTML = foot || '<button class="btn" data-act="close-modal">关闭</button>';
+  $('#modal-root').classList.add('open');
+}
+function closeModal(){ $('#modal-root').classList.remove('open'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function kvTable(obj, depth){
+  depth = depth || 0;
+  if (obj === null || obj === undefined) return '<span class="hint">—</span>';
+  if (typeof obj !== 'object') return esc(String(obj));
+  if (Array.isArray(obj)) {
+    if (!obj.length) return '<span class="hint">（空）</span>';
+    return '<table class="kv">' + obj.map((v, i) =>
+      '<tr><td>[' + i + ']</td><td>' + (typeof v === 'object' ? kvTable(v, depth + 1) : esc(String(v))) + '</td></tr>'
+    ).join('') + '</table>';
+  }
+  return '<table class="kv">' + Object.keys(obj).map(k =>
+    '<tr><td>' + esc(k) + '</td><td>' + (typeof obj[k] === 'object' ? kvTable(obj[k], depth + 1) : esc(String(obj[k]))) + '</td></tr>'
+  ).join('') + '</table>';
+}
+
+/* ============================== 任务详情 ============================== */
+async function openDetail(gid){
+  try {
+    const t = await call('aria2.tellStatus', [gid]);
+    const opt = await call('aria2.getOption', [gid]).catch(() => ({}));
+    const kind = taskKind(t);
+    let html = '<div class="row" style="margin-bottom:12px">' +
+      '<span class="badge ' + esc(kind) + '">' + esc(kindLabel[kind] || kind) + '</span>' + stateBadge(t) +
+      '<code>' + esc(t.gid) + '</code></div>';
+    html += '<h3 style="margin-top:6px">进度</h3>' + kvTable({
+      文件: taskName(t),
+      保存路径: (t.files && t.files[0] && t.files[0].path) || t.dir || '',
+      已完成: fmtBytes(t.completedLength),
+      总大小: t.totalLength > 0 ? fmtBytes(t.totalLength) : (t.media ? '媒体任务未写盘（用 media.progress）' : '未知'),
+      下载速度: fmtSpeed(t.downloadSpeed),
+      上传速度: fmtSpeed(t.uploadSpeed),
+      连接数: t.connections || '',
+      做种比: t.seeder !== undefined ? t.seeder : ''
+    });
+    if (t.files && t.files.length) {
+      html += '<h3>文件列表</h3><table class="kv"><tr><th>序号</th><th>长度 / 已完成 / 选中</th><th>路径</th></tr>' +
+        t.files.map(f => '<tr><td>' + esc(f.index) + '</td><td>' + fmtBytes(f.length) + ' / ' + fmtBytes(f.completedLength) + ' / ' + esc(f.selected) + '</td><td>' + esc(f.path) + '</td></tr>').join('') +
+        '</table>';
+    }
+    if (t.media) html += '<h3>media（HLS/DASH）</h3>' + kvTable(t.media) +
+      '<div class="hint">总大小保持 0；用 media.progress（已下载时长）与 media.downloadedLength 展示进度。</div>';
+    if (t.ed2k) html += '<h3>ed2k</h3>' + kvTable(t.ed2k);
+    if (t.bittorrent) html += '<h3>bittorrent（含 aria2-next 增强字段）</h3>' + kvTable(t.bittorrent);
+    html += '<h3>选项（aria2.getOption）</h3>' + kvTable(opt);
+
+    const acts = [];
+    if (t.state === 'active' || t.state === 'waiting') acts.push(['pause', '⏸ 暂停']);
+    if (t.state === 'paused') acts.push(['unpause', '▶ 继续']);
+    acts.push(['edit-options', '⚙️ 选项编辑'], ['move-pos', '↕ 调整顺序']);
+    if (t.media) {
+      acts.push(['finish-media', '🎬 结束直播录制']);
+      acts.push(['retry-media', '🔁 重试媒体任务']);
+      acts.push(['media-tracks', '🎚 选择轨道']);
+    }
+    if (t.bittorrent) {
+      acts.push(['bt-trackers', '📡 Trackers']);
+      acts.push(['bt-webseeds', '🌐 Web 种子']);
+      acts.push(['bt-peers', '👥 添加 Peers']);
+      acts.push(['bt-announce', '📣 强制汇报']);
+      acts.push(['bt-recheck', '♻️ 重新校验']);
+      if (t.bittorrent.fileSelectionState === 'awaiting' || t.state === 'paused') acts.push(['bt-select-files', '📄 选择文件']);
+    }
+    acts.push(['move-download', '📂 移动目录']);
+    acts.push(['remove', '✕ 删除', 'danger']);
+
+    const foot = acts.map(a =>
+      '<button class="btn ' + (a[2] || '') + '" data-act="' + a[0] + '" data-gid="' + esc(t.gid) + '">' + a[1] + '</button>'
+    ).join('');
+    showModal('任务详情 · ' + taskName(t), html, foot + '<button class="btn" data-act="close-modal">关闭</button>');
+  } catch(e){ toast('读取任务失败: ' + e.message, 'err'); }
+}
+
+/* ============================== 选项编辑 ============================== */
+async function editOptions(gid){
+  try {
+    const opt = await call('aria2.getOption', [gid]);
+    const keys = Object.keys(opt).sort();
+    const body = '<div class="hint" style="margin-bottom:10px">修改后点击保存，调用 aria2.changeOption（部分选项仅对暂停/等待任务生效）。全局已设 all-proxy，任务级只需覆盖 all-proxy 即可。</div>' +
+      '<div class="field"><label>代理 all-proxy（留空则沿用全局）</label><input type="text" id="task-opt-allproxy" value="' + esc(opt['all-proxy'] || '') + '"></div>' +
+      '<div class="field"><label>不走代理 no-proxy（留空则沿用全局）</label><input type="text" id="task-opt-noproxy" value="' + esc(opt['no-proxy'] || '') + '"></div>' +
+      '<div class="hint" style="margin:10px 0;color:var(--muted)">其余全部选项：</div>' +
+      keys.filter(k => k !== 'all-proxy' && k !== 'no-proxy').map(k => '<div class="field"><label>' + esc(k) + '</label><input type="text" data-opt="' + esc(k) + '" value="' + esc(Array.isArray(opt[k]) ? opt[k].join('\n') : opt[k]) + '"></div>').join('');
+    showModal('选项编辑 · ' + gid, body,
+      '<button class="btn primary" data-act="save-task-options" data-gid="' + esc(gid) + '">保存</button>' +
+      '<button class="btn" data-act="close-modal">取消</button>');
+  } catch(e){ toast('读取选项失败: ' + e.message, 'err'); }
+}
+async function saveTaskOptions(gid){
+  const changes = {};
+  const ap = $('#task-opt-allproxy'), np = $('#task-opt-noproxy');
+  if (ap && ap.value.trim()) changes['all-proxy'] = ap.value.trim();
+  if (np && np.value.trim()) changes['no-proxy'] = np.value.trim();
+  $$('#m-body [data-opt]').forEach(i => { changes[i.dataset.opt] = i.value; });
+  try { await call('aria2.changeOption', [gid, changes]); toast('选项已更新', 'ok'); closeModal(); poll(); }
+  catch(e){ toast('保存失败: ' + e.message, 'err'); }
+}
+
+/* ============================== BT / Media 子面板 ============================== */
+function parseTrackerLines(text){
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const m = l.match(/^(\S+)(?:\s+(\d+))?$/);
+    return m ? { url: m[1], tier: m[2] !== undefined ? m[2] : '0' } : null;
+  }).filter(Boolean);
+}
+async function btTrackersPanel(gid){
+  try {
+    const tr = await call('aria2.getBtTrackers', [gid]);
+    const body = '<h3 style="margin-top:0">当前 Trackers</h3>' + (Array.isArray(tr) && tr.length ? kvTable(tr) : '<div class="hint">（无）</div>') +
+      '<h3>替换 Trackers（aria2.replaceBtTrackers）</h3>' +
+      '<div class="field"><label>每行一条：URL [tier]，整体替换</label><textarea id="tr-lines" rows="5"></textarea></div>' +
+      '<div class="hint" id="tr-msg"></div>';
+    showModal('BitTorrent · Trackers', body,
+      '<button class="btn primary" data-act="save-trackers" data-gid="' + esc(gid) + '">替换</button>' +
+      '<button class="btn" data-act="bt-announce" data-gid="' + esc(gid) + '">强制汇报</button>' +
+      '<button class="btn" data-act="close-modal">关闭</button>');
+  } catch(e){ toast('获取 trackers 失败: ' + e.message, 'err'); }
+}
+async function saveTrackers(gid){
+  const list = parseTrackerLines($('#tr-lines').value);
+  try { const r = await call('aria2.replaceBtTrackers', [gid, list]); toast('已替换 trackers → ' + r, 'ok'); closeModal(); }
+  catch(e){ toast('替换失败: ' + e.message, 'err'); }
+}
+async function btWebSeedsPanel(gid){
+  try {
+    const st = await call('aria2.tellStatus', [gid]);
+    const cur = (st.bittorrent && st.bittorrent.webSeeds) || [];
+    showModal('BitTorrent · Web 种子（aria2.replaceBtWebSeeds）',
+      '<div class="field"><label>每行一个 URL，整体替换</label><textarea id="ws-lines" rows="5">' + esc(Array.isArray(cur) ? cur.join('\n') : '') + '</textarea></div>',
+      '<button class="btn primary" data-act="save-webseeds" data-gid="' + esc(gid) + '">替换</button>' +
+      '<button class="btn" data-act="close-modal">取消</button>');
+  } catch(e){ toast(e.message, 'err'); }
+}
+async function saveWebSeeds(gid){
+  const list = $('#ws-lines').value.split('\n').map(s => s.trim()).filter(Boolean);
+  try { const r = await call('aria2.replaceBtWebSeeds', [gid, list]); toast('已替换 web 种子 → ' + r, 'ok'); closeModal(); }
+  catch(e){ toast('替换失败: ' + e.message, 'err'); }
+}
+function btPeersPanel(gid){
+  showModal('添加 Peers（aria2.addBtPeers）',
+    '<div class="field"><label>每行一个 host:port</label><textarea id="peer-lines" rows="5" placeholder="1.2.3.4:6881"></textarea></div>',
+    '<button class="btn primary" data-act="save-peers" data-gid="' + esc(gid) + '">添加</button>' +
+    '<button class="btn" data-act="close-modal">取消</button>');
+}
+async function savePeers(gid){
+  const list = $('#peer-lines').value.split('\n').map(s => s.trim()).filter(Boolean);
+  try { const r = await call('aria2.addBtPeers', [gid, list]); toast('added: ' + r.added + ', failed: ' + r.failed, 'ok'); closeModal(); }
+  catch(e){ toast(e.message, 'err'); }
+}
+async function mediaTracksPanel(gid){
+  try {
+    const t = await call('aria2.tellStatus', [gid]);
+    const tracks = (t.media && t.media.tracks) || [];
+    const body = '<div class="hint" style="margin-bottom:10px">先用 <code>media-pause-after-probe=true</code> 添加任务，读取 media.tracks 后在此选择，调用 aria2.changeOption 写入选择，再取消暂停。</div>' +
+      '<div class="field"><label>视频 media-video（best / none / 语言 / 轨道 ID）</label><input type="text" id="mt-video" value="best"></div>' +
+      '<div class="field"><label>音频 media-audio</label><input type="text" id="mt-audio" value="best"></div>' +
+      '<div class="field"><label>字幕 media-subtitles</label><input type="text" id="mt-subs" value="none"></div>' +
+      '<div class="field"><label>容器 media-format</label><select id="mt-format"><option>mp4</option><option>mkv</option><option>vtt</option></select></div>' +
+      '<h3>探测到的轨道</h3>' + (tracks.length ? kvTable(tracks) : '<div class="hint">暂无轨道信息（任务可能尚未完成探测）。</div>');
+    showModal('Media · 轨道选择', body,
+      '<button class="btn primary" data-act="save-tracks" data-gid="' + esc(gid) + '">写入选项</button>' +
+      '<button class="btn" data-act="close-modal">关闭</button>');
+  } catch(e){ toast(e.message, 'err'); }
+}
+async function saveTracks(gid){
+  const changes = {
+    'media-video': $('#mt-video').value.trim() || 'best',
+    'media-audio': $('#mt-audio').value.trim() || 'best',
+    'media-subtitles': $('#mt-subs').value.trim() || 'none',
+    'media-format': $('#mt-format').value
+  };
+  try { await call('aria2.changeOption', [gid, changes]); toast('轨道选项已写入', 'ok'); closeModal(); }
+  catch(e){ toast('写入失败: ' + e.message, 'err'); }
+}
+async function btSelectFilesPanel(gid){
+  try {
+    const t = await call('aria2.tellStatus', [gid]);
+    const files = t.files || [];
+    const checked = new Set(files.filter(f => f.selected === 'true' || f.selected === true).map(f => f.index));
+    const body = '<div class="hint" style="margin-bottom:10px">磁力链接 + <code>pause-metadata</code>：元数据就绪后（fileSelectionState=awaiting）在此选择文件，引擎会写入 select-file。保存后记得▶继续任务。</div>' +
+      '<div id="sf-list">' + files.map(f =>
+        '<label style="display:flex;gap:8px;align-items:flex-start;margin:6px 0;color:var(--text)">' +
+        '<input type="checkbox" data-fidx="' + esc(f.index) + '"' + (checked.has(String(f.index)) || checked.has(f.index) ? ' checked' : '') + ' style="width:auto;margin-top:3px">' +
+        '<span><b>#' + esc(f.index) + '</b> ' + esc(f.path || '') + ' <span class="hint">(' + fmtBytes(f.length) + ')</span></span></label>'
+      ).join('') + '</div>' +
+      '<div class="hint" id="sf-msg"></div>';
+    showModal('选择文件 · ' + gid, body,
+      '<button class="btn primary" data-act="save-selfiles" data-gid="' + esc(gid) + '">保存选择</button>' +
+      '<button class="btn" data-act="close-modal">取消</button>');
+  } catch(e){ toast(e.message, 'err'); }
+}
+async function saveSelFiles(gid){
+  const idx = $$('#sf-list [data-fidx]').filter(i => i.checked).map(i => i.dataset.fidx).sort((a, b) => a - b);
+  // 压缩为区间
+  const ranges = [];
+  idx.forEach(n => {
+    n = +n;
+    const last = ranges[ranges.length - 1];
+    if (last && n === last[1] + 1) last[1] = n;
+    else ranges.push([n, n]);
+  });
+  const sel = ranges.map(r => r[0] === r[1] ? String(r[0]) : r[0] + '-' + r[1]).join(',');
+  try {
+    await call('aria2.changeOption', [gid, { 'select-file': sel }]);
+    toast('已选择文件: ' + (sel || '（无）'), 'ok'); closeModal();
+  } catch(e){ toast('保存失败: ' + e.message, 'err'); }
+}
+function moveDownloadPanel(gid){
+  showModal('移动未完成任务目录（aria2.moveDownload）',
+    '<div class="field"><label>目标目录 dir</label><input type="text" id="md-dir" placeholder="/new/path"></div>' +
+    '<div class="hint">异步接口，请单独调用（不进 multicall）。将未完成下载的文件移动到目标目录。</div>' +
+    '<div class="hint" id="md-msg"></div>',
+    '<button class="btn primary" data-act="do-move-download" data-gid="' + esc(gid || '') + '">移动</button>' +
+    '<button class="btn" data-act="close-modal">取消</button>');
+}
+
+/* ============================== 动作分发 ============================== */
+async function handleAction(act, gid, btn){
+  try {
+    switch (act) {
+      case 'close-modal': closeModal(); return;
+      case 'detail': openDetail(gid); return;
+      case 'pause': await call('aria2.pause', [gid]); toast('已暂停', 'ok'); poll(); return;
+      case 'unpause': await call('aria2.unpause', [gid]); toast('已继续', 'ok'); poll(); return;
+      case 'remove': {
+        if (!confirm('删除任务 ' + gid + '？（保留已下载文件）')) return;
+        try { await call('aria2.remove', [gid]); } catch(e) { await call('aria2.forceRemove', [gid]); }
+        toast('已删除', 'ok'); closeModal(); poll(); return;
+      }
+      case 'pause-all': await call('aria2.pauseAll'); toast('已全部暂停', 'ok'); poll(); return;
+      case 'unpause-all': await call('aria2.unpauseAll'); toast('已全部继续', 'ok'); poll(); return;
+      case 'purge': await call('aria2.purgeDownloadResult'); toast('已清除完成记录', 'ok'); poll(); return;
+      case 'shutdown':
+        if (!confirm('确认关闭 aria2-next 引擎？')) return;
+        await call('aria2.shutdown'); toast('已发送关机', 'warn'); return;
+      case 'edit-options': editOptions(gid); return;
+      case 'save-task-options': saveTaskOptions(gid); return;
+      case 'move-pos': {
+        const pos = prompt('目标位置（0 表示队首）', '0');
+        if (pos === null) return;
+        const r = await call('aria2.changePosition', [gid, +pos, 'POS_SET']);
+        toast('已移动到位置 ' + r, 'ok'); return;
+      }
+      case 'finish-media': await call('aria2.finishMedia', [gid]); toast('已结束录制并封装', 'ok'); poll(); return;
+      case 'retry-media': await call('aria2.retryMedia', [gid]); toast('已重新入队', 'ok'); poll(); return;
+      case 'media-tracks': mediaTracksPanel(gid); return;
+      case 'save-tracks': saveTracks(gid); return;
+      case 'bt-trackers': btTrackersPanel(gid); return;
+      case 'save-trackers': saveTrackers(gid); return;
+      case 'bt-webseeds': btWebSeedsPanel(gid); return;
+      case 'save-webseeds': saveWebSeeds(gid); return;
+      case 'bt-peers': btPeersPanel(gid); return;
+      case 'save-peers': savePeers(gid); return;
+      case 'bt-announce': await call('aria2.forceBtAnnounce', [gid]); toast('已向 tracker/DHT/本地发现汇报', 'ok'); return;
+      case 'bt-recheck':
+        if (!confirm('重新校验已下载数据？')) return;
+        await call('aria2.forceBtRecheck', [gid]); toast('已开始重新校验', 'ok'); return;
+      case 'bt-select-files': btSelectFilesPanel(gid); return;
+      case 'save-selfiles': saveSelFiles(gid); return;
+      case 'move-download': moveDownloadPanel(gid); return;
+      case 'do-move-download': {
+        const g = gid || ($('#mv-gid') ? $('#mv-gid').value.trim() : '');
+        const dir = ($('#md-dir') && $('#md-dir').value.trim()) || ($('#mv-dir') ? $('#mv-dir').value.trim() : '');
+        if (!g || !dir) { toast('需要 GID 与目录', 'err'); return; }
+        const r = await call('aria2.moveDownload', [g, dir]);
+        toast('已移动 → ' + r, 'ok'); closeModal(); return;
+      }
+      case 'add-task': await addTask(false); return;
+      case 'add-task-paused': await addTask(true); return;
+      case 'ed-search': ed2kSearch(); return;
+      case 'ed-more': ed2kMore(); return;
+      case 'ed-stop': ed2kStop(); return;
+      case 'ed-client-status': ed2kStatus(); return;
+      case 'ed-download': {
+        const link = btn.dataset.link;
+        await call('aria2.addUri', [[link], {}]);
+        toast('已添加 ED2K 任务', 'ok'); showView('downloading'); return;
+      }
+      case 'probe': doProbe(); return;
+      case 'resolve-filename': doResolveFilename(); return;
+      case 'inspect-torrent': doInspectTorrent(); return;
+      case 'bt-session': doBtSession(); return;
+      case 'set-blocklist': doSetBlocklist(); return;
+      case 'save-conn': saveConnForm(); return;
+      case 'reconnect': connect(); toast('正在重连…'); return;
+      case 'refresh-version': refreshVersion(); return;
+      case 'reload-gopt': refreshGlobalOptions(); toast('已重新加载'); return;
+      case 'save-gopt': saveGlobalOptions(); return;
+      case 'save-session': {
+        const r = await call('aria2.saveSession');
+        toast('会话已保存 → ' + r, 'ok'); return;
+      }
+      case 'session-info': {
+        const r = await call('aria2.getSessionInfo');
+        $('#session-box').innerHTML = kvTable(r); return;
+      }
+    }
+  } catch(e){ toast('操作失败: ' + e.message, 'err'); }
+}
+
+/* ============================== 新建任务 ============================== */
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(',')[1]);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
+function collectAddOptions(forcePause){
+  const opt = {};
+  const v = id => { const e = $(id); return e ? e.value.trim() : ''; };
+  if (v('#add-dir')) opt.dir = v('#add-dir');
+  if (v('#add-out')) opt.out = v('#add-out');
+  if (v('#add-alloc')) opt['file-allocation'] = v('#add-alloc');
+  if (v('#add-dllimit')) opt['max-download-limit'] = v('#add-dllimit');
+  if (v('#add-selectfile')) opt['select-file'] = v('#add-selectfile');
+  if (v('#add-referer')) opt.referer = v('#add-referer');
+  if (v('#add-ua')) opt['user-agent'] = v('#add-ua');
+  if (v('#add-allproxy')) opt['all-proxy'] = v('#add-allproxy');
+  if (v('#add-http-proxy')) opt['http-proxy'] = v('#add-http-proxy');
+  if (v('#add-https-proxy')) opt['https-proxy'] = v('#add-https-proxy');
+  if (v('#add-socks4-proxy')) opt['socks4-proxy'] = v('#add-socks4-proxy');
+  if (v('#add-socks5-proxy')) opt['socks5-proxy'] = v('#add-socks5-proxy');
+  if (v('#add-bt-proxy')) opt['bt-proxy'] = v('#add-bt-proxy');
+  if (v('#add-ftp-proxy')) opt['ftp-proxy'] = v('#add-ftp-proxy');
+  if (v('#add-sftp-user')) opt['sftp-user'] = v('#add-sftp-user');
+  if (v('#add-sftp-passwd')) opt['sftp-passwd'] = v('#add-sftp-passwd');
+  if (v('#add-http-user')) opt['http-user'] = v('#add-http-user');
+  if (v('#add-http-passwd')) opt['http-passwd'] = v('#add-http-passwd');
+  if (v('#add-no-proxy')) opt['no-proxy'] = v('#add-no-proxy');
+  if (v('#add-http-proxy-user')) opt['http-proxy-user'] = v('#add-http-proxy-user');
+  if (v('#add-http-proxy-passwd')) opt['http-proxy-passwd'] = v('#add-http-proxy-passwd');
+  if (v('#add-https-proxy-user')) opt['https-proxy-user'] = v('#add-https-proxy-user');
+  if (v('#add-https-proxy-passwd')) opt['https-proxy-passwd'] = v('#add-https-proxy-passwd');
+  if (v('#add-proxy-user')) opt['all-proxy-user'] = v('#add-proxy-user');
+  if (v('#add-proxy-passwd')) opt['all-proxy-passwd'] = v('#add-proxy-passwd');
+  if (v('#add-pausemeta') === 'true') opt['pause-metadata'] = 'true';
+  const pause = forcePause ? 'true' : v('#add-pause');
+  if (pause === 'true') opt.pause = 'true';
+  const extra = v('#add-extra');
+  if (extra) {
+    try { Object.assign(opt, JSON.parse(extra)); }
+    catch(e){ throw new Error('“更多选项” 不是合法 JSON'); }
+  }
+  return opt;
+}
+async function addTask(forcePause){
+  try {
+    const which = ['uri', 'torrent', 'metalink'].find(k => $('#addtab-' + k).style.display !== 'none') || 'uri';
+    const opt = collectAddOptions(forcePause);
+    if (which === 'uri') {
+      const uris = $('#add-uris').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (!uris.length) { toast('请填写至少一个链接', 'err'); return; }
+      // 每行一个任务，便于逐行控制（同 aria2 --force-sequential 效果）
+      for (const u of uris) await call('aria2.addUri', [[u], opt]);
+      toast('已添加 ' + uris.length + ' 个任务', 'ok');
+    } else if (which === 'torrent') {
+      const f = $('#add-torrent').files[0];
+      if (!f) { toast('请选择 .torrent 文件', 'err'); return; }
+      const b64 = await fileToBase64(f);
+      const tracker = $('#add-bt-tracker').value.trim();
+      if (tracker) opt['bt-tracker'] = tracker;
+      const r = await call('aria2.addTorrent', [b64, [], opt]);
+      toast('已添加种子任务 → ' + r, 'ok');
+    } else {
+      const f = $('#add-metalink').files[0];
+      if (!f) { toast('请选择 metalink 文件', 'err'); return; }
+      const b64 = await fileToBase64(f);
+      const r = await call('aria2.addMetalink', [b64, opt]);
+      toast('已添加 metalink → ' + r.join(','), 'ok');
+    }
+    showView('downloading'); poll();
+  } catch(e){ toast('添加失败: ' + e.message, 'err'); }
+}
+
+/* ============================== ED2K 搜索 ============================== */
+async function ed2kSearch(){
+  try {
+    const kw = $('#ed-kw').value.trim();
+    if (!kw) { toast('请填写关键词', 'err'); return; }
+    const opt = {};
+    const v = id => $(id).value.trim();
+    if (v('#ed-type')) opt.fileType = v('#ed-type');
+    if (v('#ed-ext')) opt.extension = v('#ed-ext');
+    if (v('#ed-minsize')) opt.minSize = v('#ed-minsize');
+    if (v('#ed-maxsize')) opt.maxSize = v('#ed-maxsize');
+    if (v('#ed-minsrc')) opt.minSourceCount = v('#ed-minsrc');
+    if (v('#ed-minfull')) opt.minCompleteSourceCount = v('#ed-minfull');
+    const to = +v('#ed-timeout'); if (to >= 5 && to <= 600) opt.timeout = to;
+    ed2kStop();
+    const gid = await call('aria2.ed2kSearch', [kw, opt]);
+    state.edSearchGid = gid;
+    $('#ed-status').innerHTML = '搜索中… 搜索 GID: <code>' + esc(gid) + '</code>';
+    state.edPoll = setInterval(ed2kRefresh, 2000);
+    ed2kRefresh();
+  } catch(e){ toast('搜索失败: ' + e.message, 'err'); }
+}
+async function ed2kRefresh(){
+  if (!state.edSearchGid) return;
+  try {
+    const r = await call('aria2.getEd2kSearchResults', [state.edSearchGid]);
+    $('#ed-status').innerHTML = '搜索 GID: <code>' + esc(r.gid || state.edSearchGid) + '</code> · 状态: ' + esc(r.status || '?') +
+      (r.moreResults === true || r.moreResults === 'true' ? ' · 还有更多结果' : ' · 已到末尾') +
+      ' · 共 ' + ((r.results && r.results.length) || 0) + ' 条';
+    const list = r.results || [];
+    if (!list.length) { $('#ed-results').innerHTML = '<div class="empty">暂无结果</div>'; return; }
+    $('#ed-results').innerHTML = '<table class="kv list"><tr><th>文件名</th><th>大小</th><th>源</th><th>完整源</th><th>操作</th></tr>' +
+      list.map(x => '<tr><td style="width:auto">' + esc(x.name || '') + '<div class="hint">' + esc(x.hash || '') + '</div></td>' +
+        '<td>' + fmtBytes(x.length) + '</td><td>' + esc(x.sourceCount) + '</td><td>' + esc(x.completeSourceCount) + '</td>' +
+        '<td><button class="btn small primary" data-act="ed-download" data-link="' + esc(x.ed2kLink || '') + '">下载</button></td></tr>').join('') +
+      '</table>';
+  } catch(e){ $('#ed-status').textContent = '查询失败: ' + e.message; }
+}
+async function ed2kMore(){
+  if (!state.edSearchGid) { toast('没有进行中的搜索', 'err'); return; }
+  try { const r = await call('aria2.ed2kSearchMore', [state.edSearchGid]); toast(r ? '已请求更多结果' : '服务器未返回更多', r ? 'ok' : 'warn'); }
+  catch(e){ toast(e.message, 'err'); }
+}
+async function ed2kStop(){
+  if (state.edPoll) { clearInterval(state.edPoll); state.edPoll = null; }
+  if (state.edSearchGid) {
+    try { await call('aria2.removeEd2kSearch', [state.edSearchGid]); } catch(e){}
+    state.edSearchGid = null;
+    $('#ed-status').textContent = '搜索已停止。';
+  }
+}
+async function ed2kStatus(){
+  try {
+    const r = await call('aria2.getEd2kStatus', []);
+    $('#ed-client').innerHTML = kvTable(r);
+  } catch(e){ toast(e.message, 'err'); }
+}
+
+/* ============================== 工具箱 ============================== */
+async function doProbe(){
+  const url = $('#probe-url').value.trim();
+  if (!url) { toast('请填写 URL', 'err'); return; }
+  $('#probe-result').innerHTML = '<div class="hint">探测中…（异步接口，可能需要几秒）</div>';
+  try {
+    const r = await call('aria2.probe', [url, {}]);
+    $('#probe-result').innerHTML = kvTable(r);
+  } catch(e){ $('#probe-result').innerHTML = '<div class="toast err">' + esc(e.message) + '</div>'; }
+}
+async function doResolveFilename(){
+  const url = $('#rf-url').value.trim(), cd = $('#rf-cd').value.trim();
+  if (!url) { toast('请填写 URL', 'err'); return; }
+  const bytes = Array.from(new TextEncoder().encode(cd));
+  try {
+    const r = await call('aria2.resolveFilename', [url, bytes]);
+    $('#rf-result').innerHTML = '引擎将使用文件名：<b>' + esc(r) + '</b>';
+  } catch(e){ $('#rf-result').innerHTML = '<div class="toast err">' + esc(e.message) + '</div>'; }
+}
+async function doInspectTorrent(){
+  const f = $('#ins-file').files[0];
+  if (!f) { toast('请选择 .torrent 文件', 'err'); return; }
+  try {
+    const b64 = await fileToBase64(f);
+    const r = await call('aria2.inspectTorrent', [b64]);
+    $('#ins-result').innerHTML = kvTable(r);
+  } catch(e){ toast(e.message, 'err'); }
+}
+async function doBtSession(){
+  try { const r = await call('aria2.getBtSessionStatus', []); $('#bt-session').innerHTML = kvTable(r); }
+  catch(e){ toast(e.message, 'err'); }
+}
+async function doSetBlocklist(){
+  const rules = $('#bl-rules').value.split('\n').map(s => s.trim()).filter(Boolean);
+  try {
+    const r = await call('aria2.setBtPeerBlocklist', [rules]);
+    $('#bl-result').innerHTML = '已提交：' + kvTable(r);
+    toast('封锁列表已更新', 'ok');
+  } catch(e){ toast(e.message, 'err'); }
+}
+
+/* ============================== 设置 ============================== */
+function fillConnForm(){
+  $('#cfg-host').value = cfg.host;
+  $('#cfg-port').value = cfg.port;
+  $('#cfg-path').value = cfg.path;
+  $('#cfg-secret').value = cfg.secret;
+  $('#cfg-transport').value = cfg.transport;
+  $('#cfg-tls').value = String(!!useTls());
+  $('#cfg-interval').value = cfg.interval;
+}
+function saveConnForm(){
+  cfg.host = $('#cfg-host').value.trim() || '127.0.0.1';
+  cfg.port = +$('#cfg-port').value || 6800;
+  cfg.path = $('#cfg-path').value.trim() || '/jsonrpc';
+  cfg.secret = $('#cfg-secret').value;
+  cfg.transport = $('#cfg-transport').value;
+  cfg.tls = $('#cfg-tls').value;
+  cfg.interval = Math.max(500, +$('#cfg-interval').value || 1000);
+  saveCfg();
+  toast('已保存，正在连接…', 'ok');
+  connect();
+}
+function renderVersion(v){
+  state.version = v;
+  if (!v) { $('#version-box').innerHTML = '<div class="hint">未连接</div>'; return; }
+  const isNext = /aria2[- ]?next/i.test(String(v.product || ''));
+  let html = kvTable(v);
+  if (isNext) html += '<div style="margin-top:10px"><span class="pill">✅ 检测到 aria2-next，扩展接口可用</span>' +
+    (Array.isArray(v.mediaFeatures) ? v.mediaFeatures.map(f => '<span class="pill">media: ' + esc(f) + '</span>').join('') : '') +
+    (Array.isArray(v.downloadFeatures) ? v.downloadFeatures.map(f => '<span class="pill">download: ' + esc(f) + '</span>').join('') : '') + '</div>';
+  else html += '<div class="hint" style="margin-top:10px">⚠️ 未检测到 aria2-next（product=' + esc(v.product) + '），扩展接口可能不可用。</div>';
+  $('#version-box').innerHTML = html;
+}
+function refreshVersion(){
+  call('aria2.getVersion', []).then(renderVersion).catch(e => { $('#version-box').innerHTML = '<div class="hint">' + esc(e.message) + '</div>'; });
+}
+async function refreshGlobalOptions(){
+  try {
+    const opt = await call('aria2.getGlobalOption', []);
+    state.gopt = opt;
+    const keys = Object.keys(opt).sort();
+    $('#gopt-box').innerHTML = keys.map(k =>
+      '<div class="field"><label>' + esc(k) + '</label><input type="text" data-gopt="' + esc(k) + '" value="' + esc(Array.isArray(opt[k]) ? opt[k].join('\n') : opt[k]) + '"></div>'
+    ).join('');
+    refreshGlobalProxy();
+  } catch(e){ $('#gopt-box').innerHTML = '<div class="hint">加载失败: ' + esc(e.message) + '</div>'; }
+}
+async function saveGlobalOptions(){
+  const changes = {};
+  $$('#gopt-box [data-gopt]').forEach(i => {
+    const k = i.dataset.gopt, oldv = Array.isArray(state.gopt[k]) ? state.gopt[k].join('\n') : state.gopt[k];
+    if (i.value !== (oldv === undefined ? '' : oldv)) changes[k] = i.value;
+  });
+  const n = Object.keys(changes).length;
+  if (!n) { toast('没有修改'); return; }
+  try {
+    await call('aria2.changeGlobalOption', [changes]);
+    toast('已更新 ' + n + ' 项全局选项', 'ok');
+    refreshGlobalOptions();
+  } catch(e){ toast('保存失败: ' + e.message, 'err'); }
+}
+
+/* ============================== 全局代理 ============================== */
+const gproxyKeys = ['all-proxy','all-proxy-user','all-proxy-passwd'];
+function refreshGlobalProxy(){
+  if (!state.gopt) { $('#gproxy-box').innerHTML = '<div class="hint">请先连接引擎</div>'; return; }
+  $('#gproxy-box').innerHTML = gproxyKeys.map(k =>
+    '<div class="field"><label>' + esc(k) + '</label><input type="' + (/passwd/i.test(k) ? 'password' : 'text') + '" data-gproxy="' + esc(k) + '" value="' + esc(Array.isArray(state.gopt[k]) ? state.gopt[k].join('\n') : (state.gopt[k] === undefined ? '' : state.gopt[k])) + '"></div>'
+  ).join('');
+}
+async function saveGlobalProxy(){
+  const changes = {};
+  $$('#gproxy-box [data-gproxy]').forEach(i => {
+    const k = i.dataset.gproxy, oldv = Array.isArray(state.gopt[k]) ? state.gopt[k].join('\n') : (state.gopt[k] === undefined ? '' : state.gopt[k]);
+    if (i.value !== oldv) changes[k] = i.value;
+  });
+  const n = Object.keys(changes).length;
+  if (!n) { toast('没有修改'); return; }
+  try {
+    await call('aria2.changeGlobalOption', [changes]);
+    toast('已更新 ' + n + ' 项全局代理', 'ok');
+    refreshGlobalOptions();
+    refreshGlobalProxy();
+  } catch(e){ toast('保存失败: ' + e.message, 'err'); }
+}
+
+/* ============================== 启动 ============================== */
+fillConnForm();
+renderAll();
+connect();
+</script>
+</body>
+</html>
