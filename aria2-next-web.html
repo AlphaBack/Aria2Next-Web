@@ -726,6 +726,7 @@ function taskRow(t){
       '<span>' + sizeText(t) + '</span>' +
       (t.state === 'active' ? '<span>↓ ' + fmtSpeed(dl) + '</span><span>↑ ' + fmtSpeed(ul) + '</span><span>剩余 ' + fmtETA(eta) + '</span>' : '') +
       (t.connections ? '<span>连接 ' + esc(t.connections) + '</span>' : '') +
+      (t.state === 'active' ? '<span style="color:var(--primary)">实时 ↓ ' + fmtSpeed(dl) + '</span>' : '') +
       (extras.map(e => '<span>' + e + '</span>').join('')) +
     '</div>' +
   '</div>';
