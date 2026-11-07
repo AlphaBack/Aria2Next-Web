@@ -830,7 +830,15 @@ async function bulkDelete(){
 }
 function sortTasks(arr, key){
   const a = arr.slice();
-  const getAdd = t => num(t.addedDate || t.addTime) || num(t.completedLength) || 0;
+  
+  // 1. 获取添加时间：优先使用 aria2-next 的字段，否则使用 GID（aria2 的 GID 是递增的 16 进制，字典序等同于时间先后）
+  const getAdd = t => {
+    if (t.addedDate) return num(t.addedDate);
+    if (t.addTime) return num(t.addTime);
+    return t.gid || ''; 
+  };
+  
+  // 2. 获取进度
   const getProg = t => {
     const total = num(t.totalLength), done = num(t.completedLength);
     if (total > 0) return done / total;
@@ -842,24 +850,42 @@ function sortTasks(arr, key){
     }
     return 0;
   };
+  
+  // 3. 获取剩余时间（修复：已完成的任务剩余时间视为 0，而不是 Infinity）
   const getRem = t => {
-    const dl = num(t.downloadSpeed), total = num(t.totalLength), done = num(t.completedLength);
+    const total = num(t.totalLength), done = num(t.completedLength);
+    if (total > 0 && done >= total) return 0; // 已完成，排最前
+    const dl = num(t.downloadSpeed);
     if (dl > 0 && total > done) return (total - done) / dl;
-    return Infinity;
+    return Infinity; // 无法计算（速度为0或大小未知），排最后
   };
+  
   const getName = t => (taskName(t) || '').toLowerCase();
+  
   a.sort((x, y) => {
     switch (key) {
-      case 'progress': return getProg(y) - getProg(x);
+      case 'progress': 
+        return getProg(y) - getProg(x); // 降序：进度高的在前
+        
       case 'remaining': {
         const rx = getRem(x), ry = getRem(y);
-        if (!isFinite(rx) && !isFinite(ry)) return 0;
-        if (!isFinite(rx)) return 1;
-        if (!isFinite(ry)) return -1;
-        return rx - ry;
+        if (rx === Infinity && ry === Infinity) return 0;
+        if (rx === Infinity) return 1;  // x 无法计算，排后面
+        if (ry === Infinity) return -1; // y 无法计算，排后面
+        return rx - ry; // 升序：剩余时间少的在前
       }
-      case 'name': return getName(x).localeCompare(getName(y), 'zh-CN');
-      default: return getAdd(y) - getAdd(x);
+      
+      case 'name': 
+        return getName(x).localeCompare(getName(y), 'zh-CN'); // 升序：A-Z
+        
+      default: { // 'add' (添加时间)
+        const ax = getAdd(x), ay = getAdd(y);
+        // 如果兜底使用了 GID 字符串，按字符串降序比较（最新的 GID 字典序更大）
+        if (typeof ax === 'string' && typeof ay === 'string') {
+          return ay.localeCompare(ax); 
+        }
+        return ay - ax; // 降序：时间戳大的（新添加的）在前
+      }
     }
   });
   return a;
@@ -905,6 +931,11 @@ function renderAll(){
 function showView(name){
   $$('#nav .nav-item').forEach(n => n.classList.toggle('active', n.dataset.view === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  
+  // 【修复】：切换视图时清空选择，避免跨列表误操作
+  state.selection.clear(); 
+  updateBulkBar();
+  
   if (name === 'settings') { fillConnForm(); refreshVersion(); refreshGlobalProxy(); }
 }
 document.addEventListener('click', e => {
@@ -1353,7 +1384,10 @@ async function ed2kSearch(){
     $('#ed-status').innerHTML = '搜索中… 搜索 GID: <code>' + esc(gid) + '</code>';
     state.edPoll = setInterval(ed2kRefresh, 2000);
     ed2kRefresh();
-  } catch(e){ toast('搜索失败: ' + e.message, 'err'); }
+  } catch(e){ 
+    $('#ed-status').textContent = '查询失败: ' + e.message + ' (已停止轮询)'; 
+    ed2kStop(); // 【修复】：出错时停止定时器，防止无限报错
+  }
 }
 async function ed2kRefresh(){
   if (!state.edSearchGid) return;
