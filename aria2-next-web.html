@@ -76,6 +76,9 @@ code{background:#eef1f7;padding:1px 5px;border-radius:4px;font-size:12px}
 .t-act{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
   .t-speed{display:flex;gap:10px;align-items:center;font-size:12px;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:auto;color:var(--muted)}
   .t-speed span:nth-child(1){color:var(--primary)} .t-speed span:nth-child(2){color:var(--ok)}
+  .t-meta .task-live-dl{color:var(--primary);font-weight:600}
+  .t-meta .task-live-ul{color:var(--ok)}
+  .t-meta .task-live-eta{color:var(--warn);font-weight:600}
 /* kv table */
 table.kv{width:100%;border-collapse:collapse;font-size:12.5px}
 table.kv td,table.kv th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top;word-break:break-all}
@@ -704,7 +707,14 @@ function taskRow(t){
   const dl = num(t.downloadSpeed), ul = num(t.uploadSpeed);
   const total = num(t.totalLength), done = num(t.completedLength);
   const eta = (dl > 0 && total > done) ? (total - done) / dl : -1;
-  const barCls = t.status === 'error' ? 'err' : (t.status === 'complete' ? 'ok' : '');
+  
+  // 【修复核心】：兼容标准 aria2 的 status 字段
+  const status = t.status || t.state || '';
+  const isActive = status === 'active';
+  const isWaiting = status === 'waiting';
+  const isPaused = status === 'paused';
+  
+  const barCls = status === 'error' ? 'err' : (status === 'complete' ? 'ok' : '');
   const extras = extraMeta(t);
   return '<div class="task" data-gid="' + esc(t.gid) + '">' +
     '<div class="t-top">' +
@@ -712,21 +722,21 @@ function taskRow(t){
       stateBadge(t) +
       '<span class="badge ' + esc(kind) + '">' + esc(kindLabel[kind] || kind) + '</span>' +
       '<div class="t-name" data-act="detail" data-gid="' + esc(t.gid) + '" title="' + esc(taskName(t)) + '">' + esc(taskName(t)) + '</div>' +
-      '<div class="t-speed">' + (t.state === 'active' ? '<span>↓ ' + fmtSpeed(dl) + '</span><span>↑ ' + fmtSpeed(ul) + '</span>' : '') + '</div>' +
       '<div class="t-act">' +
-        (t.state === 'active' || t.state === 'waiting' ? '<button class="btn small" data-act="pause" data-gid="' + esc(t.gid) + '">⏸</button>' : '') +
-        (t.state === 'paused' ? '<button class="btn small" data-act="unpause" data-gid="' + esc(t.gid) + '">▶</button>' : '') +
+        (isActive || isWaiting ? '<button class="btn small" data-act="pause" data-gid="' + esc(t.gid) + '">⏸</button>' : '') +
+        (isPaused ? '<button class="btn small" data-act="unpause" data-gid="' + esc(t.gid) + '">▶</button>' : '') +
         '<button class="btn small danger" data-act="remove" data-gid="' + esc(t.gid) + '">✕</button>' +
         '<button class="btn small" data-act="detail" data-gid="' + esc(t.gid) + '">详情</button>' +
       '</div>' +
     '</div>' +
     '<div class="bar"><i class="' + barCls + '" style="width:' + p.toFixed(2) + '%"></i></div>' +
     '<div class="t-meta">' +
+      (isActive ? '<span class="task-live-dl" title="实时下载速度">↓ ' + fmtSpeed(dl) + '</span>' : '') +
+      (isActive ? '<span class="task-live-ul" title="上传速度">↑ ' + fmtSpeed(ul) + '</span>' : '') +
+      (isActive ? '<span class="task-live-eta" title="下载剩余时间">⏱ 剩余 ' + (eta > 0 ? fmtETA(eta) : '计算中') + '</span>' : '') +
       '<span>' + p.toFixed(2) + '%</span>' +
       '<span>' + sizeText(t) + '</span>' +
-      (t.state === 'active' ? '<span>↓ ' + fmtSpeed(dl) + '</span><span>↑ ' + fmtSpeed(ul) + '</span><span>剩余 ' + fmtETA(eta) + '</span>' : '') +
       (t.connections ? '<span>连接 ' + esc(t.connections) + '</span>' : '') +
-      (t.state === 'active' ? '<span style="color:var(--primary)">实时 ↓ ' + fmtSpeed(dl) + '</span>' : '') +
       (extras.map(e => '<span>' + e + '</span>').join('')) +
     '</div>' +
   '</div>';
@@ -979,9 +989,12 @@ async function openDetail(gid){
     if (t.bittorrent) html += '<h3>bittorrent（含 aria2-next 增强字段）</h3>' + kvTable(t.bittorrent);
     html += '<h3>选项（aria2.getOption）</h3>' + kvTable(opt);
 
+    // 【修复核心】：统一使用 status 字段判断状态
+    const status = t.status || t.state || '';
+    
     const acts = [];
-    if (t.state === 'active' || t.state === 'waiting') acts.push(['pause', '⏸ 暂停']);
-    if (t.state === 'paused') acts.push(['unpause', '▶ 继续']);
+    if (status === 'active' || status === 'waiting') acts.push(['pause', '⏸ 暂停']);
+    if (status === 'paused') acts.push(['unpause', '▶ 继续']);
     acts.push(['edit-options', '⚙️ 选项编辑'], ['move-pos', '↕ 调整顺序']);
     if (t.media) {
       acts.push(['finish-media', '🎬 结束直播录制']);
@@ -994,7 +1007,7 @@ async function openDetail(gid){
       acts.push(['bt-peers', '👥 添加 Peers']);
       acts.push(['bt-announce', '📣 强制汇报']);
       acts.push(['bt-recheck', '♻️ 重新校验']);
-      if (t.bittorrent.fileSelectionState === 'awaiting' || t.state === 'paused') acts.push(['bt-select-files', '📄 选择文件']);
+      if (t.bittorrent.fileSelectionState === 'awaiting' || status === 'paused') acts.push(['bt-select-files', '📄 选择文件']);
     }
     acts.push(['move-download', '📂 移动目录']);
     acts.push(['remove', '✕ 删除', 'danger']);
